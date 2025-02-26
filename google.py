@@ -11,7 +11,18 @@ from google.auth.transport.requests import Request
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
 # Path to the credentials file
-CREDENTIALS_FILE = 'credentials.json'
+CREDENTIALS = {
+    'installed': {
+        'client_id': st.secrets['google']['client_id'],
+        'project_id': st.secrets['google']['project_id'],
+        'auth_uri': st.secrets['google']['auth_uri'],
+        'token_uri': st.secrets['google']['token_uri'],
+        'auth_provider_x509_cert_url': st.secrets['google']['auth_provider_x509_cert_url'],
+        'client_secret': st.secrets['google']['client_secret'],
+        'redirect_uris': [st.secrets['google']['redirect_uris']],
+    },
+}
+
 TOKEN_FILE = 'token.pickle'
 if 'code' not in st.session_state:
     st.session_state.code = None
@@ -30,11 +41,14 @@ def load_token_from_file():
 
 
 def create_flow():
-    return Flow.from_client_secrets_file(
-        CREDENTIALS_FILE,
+    a = Flow.from_client_config(
+        CREDENTIALS,
         scopes=SCOPES,
-        redirect_uri='http://localhost:8501/',
+        redirect_uri=st.secrets['google']['redirect_uris'],
     )
+    # st.sidebar.write(a)
+
+    return a
 
 
 def get_drive_service(credentials):
@@ -64,7 +78,7 @@ def main():
     # Check for authorization code in URL query parameters
     if st.session_state.code is None:
         query_params = st.query_params
-        st.session_state.code = query_params.get('code', [None])[0]
+        st.session_state.code = query_params.get('code', [None])
 
     creds = load_token_from_file()
 
@@ -73,13 +87,13 @@ def main():
         try:
             if st.session_state.flow is None:
                 st.session_state.flow = create_flow()
+            st.sidebar.write(st.session_state.code)
 
             st.session_state.flow.fetch_token(code=st.session_state.code)
             creds = st.session_state.flow.credentials
             save_token_to_file(creds)
 
             # Clear the URL parameters
-            st.experimental_set_query_params()
             st.success('Successfully authenticated with Google Drive!')
             st.experimental_rerun()
         except Exception as e:
