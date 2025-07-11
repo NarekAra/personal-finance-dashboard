@@ -484,11 +484,6 @@ def display_contact_info() -> None:
         Get in touch / notify any bugs:
         """,
         )
-        mention(
-            label='Narek Arakelyan',
-            icon='https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-1024.png',
-            url='https://www.linkedin.com/in/n-arakelyan/',
-        )
         mention(label='Narek Arakelyan', icon='github', url='https://github.com/NarekAra')
 
 
