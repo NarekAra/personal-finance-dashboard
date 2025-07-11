@@ -5,8 +5,11 @@ Afterwards, they can change some configurations to personalize their dashboard.
 
 from typing import Any
 
+import gspread
 import pandas as pd
 import streamlit as st
+from gspread_dataframe import get_as_dataframe
+from oauth2client.service_account import ServiceAccountCredentials
 from streamlit_javascript import st_javascript
 
 from utils import (
@@ -24,6 +27,28 @@ from utils import (
     validate_dashboard_config_format,
     validate_transactions_data,
 )
+
+# Load credentials
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    keyfile_dict={
+        'type': st.secrets['google']['type'],
+        'project_id': st.secrets['google']['project_id'],
+        'private_key_id': st.secrets['google']['private_key_id'],
+        'private_key': st.secrets['google']['private_key'],
+        'client_email': st.secrets['google']['client_email'],
+        'client_id': st.secrets['google']['client_id'],
+        'auth_uri': st.secrets['google']['auth_uri'],
+        'token_uri': st.secrets['google']['token_uri'],
+        'auth_provider_x509_cert_url': st.secrets['google']['auth_provider_x509_cert_url'],
+        'client_x509_cert_url': st.secrets['google']['client_x509_cert_url'],
+        'universe_domain': st.secrets['google']['universe_domain'],
+    },
+    scopes=scope,
+)
+
+client = gspread.authorize(creds)
 
 
 def display_header() -> None:
@@ -55,13 +80,31 @@ def handle_file_upload() -> pd.DataFrame | None:
             f'{next_step} your transactions (.xlsx).',
             example_categorized_transactions,
         )
+        # User input
+        st.write(
+            f"You can also upload a Google Sheet link which is visible for 'everyone with link'. Do not forget to click {next_step} the file.",
+        )
+        sheet_url = st.text_input('Paste your Google Sheet link:')
+
     st.info('The transactions should be structured like this:', icon='ℹ️')
     st.dataframe(pd.read_excel(paths['categorized_data_structure']))
-
     with col2:
         if st.button(f'{next_step} the file.'):
+            df_fetched = None
             if file_path:
                 df_fetched = pd.read_excel(file_path)
+            if sheet_url:
+                try:
+                    # Extract the sheet ID
+                    sheet_id = sheet_url.split('/d/')[1].split('/')[0]
+
+                    # Open sheet by ID
+                    sheet = client.open_by_key(sheet_id).sheet1  # First tab
+                    df_fetched = get_as_dataframe(sheet)
+
+                except Exception as e:
+                    st.error(f'Error loading sheet: {e}')
+            if df_fetched is not None:
                 df_fetched['DATE'] = df_fetched['DATE'].astype(str)
                 if 'TAG' in df_fetched.columns:  # TODO: dont hardcod
                     df_fetched['TAG'] = df_fetched['TAG']

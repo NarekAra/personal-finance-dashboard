@@ -1,3 +1,0 @@
-ruff
-pydocstyle
-# run mypy --install-types --non-interactive
