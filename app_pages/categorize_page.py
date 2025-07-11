@@ -110,6 +110,16 @@ with upload_transactions:
             st.session_state.data_to_categorize = pd.read_excel(file_path)
         else:
             st.error('Please upload a transactions file.')
+    if st.session_state.data_to_categorize is not None:
+        # Add number input for starting row
+        st.session_state.start_row = st.number_input(
+            'Start categorizing from row (1-based index, leave at 1 to process all rows):',
+            min_value=1,
+            max_value=len(st.session_state.data_to_categorize),
+            value=1,
+            help='Specify which row to start categorizing from. Row 1 is the first row after the header.',
+        )
+
 
 with categorize_transactions:
     if (st.session_state.config_to_categorize is not None) & (st.session_state.data_to_categorize is not None):
@@ -131,7 +141,7 @@ with categorize_transactions:
 
         if st.session_state.updated_categorized_df is None:
             categorized_data = categorize_data(
-                st.session_state.data_to_categorize,
+                st.session_state.data_to_categorize.iloc[st.session_state.start_row - 1 :],
                 st.session_state.config_to_categorize,
             )
             validate_data_after_categorization(categorized_data)
