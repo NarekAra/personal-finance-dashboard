@@ -13,3 +13,5 @@ fastexcel
 pyrebase4
 extra_streamlit_components
 ruamel.yaml
+gspread
+gspread_dataframe
